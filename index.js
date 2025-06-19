@@ -29,3 +29,6 @@ app.post('/slack/actions', (req, res) => {
 app.listen(PORT, () => {
   console.log(`✅ サーバー起動完了！PORT: ${PORT}`);
 });
+app.get('/', (req, res) => {
+  res.send('✅ Renderサーバー稼働中');
+});
