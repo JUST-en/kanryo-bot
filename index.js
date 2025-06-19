@@ -19,6 +19,10 @@ app.post('/slack/actions', async (req, res) => {
 
       const token = process.env.SLACK_BOT_TOKEN;
 
+      // ▼ 文字列を分割して個別情報として使う
+      const [genba, deadline, tantou] = action.value.split('|');
+      const notifyUser = '<@ULLR1PF7W>'; // メンションしたいユーザーID
+
       // ✅ ① スタンプを付ける
       await axios.post('https://slack.com/api/reactions.add', {
         channel: payload.channel.id,
@@ -31,11 +35,15 @@ app.post('/slack/actions', async (req, res) => {
         }
       });
 
-      // ✅ ② スレッドに返信を送る
+      // ✅ ② スレッドに返信を送る（詳細＋メンション付き）
       await axios.post('https://slack.com/api/chat.postMessage', {
         channel: payload.channel.id,
         thread_ts: payload.message.ts,
-        text: `✅ 担当者が完了報告をしました！\n> ${action.value}`
+        text: `✅ 担当者が完了報告をしました！\n\n` +
+              `*現場名*: ${genba}\n` +
+              `*〆切日*: ${deadline}\n` +
+              `*担当者*: ${tantou}\n\n` +
+              `${notifyUser} さんにも通知しました。`
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
