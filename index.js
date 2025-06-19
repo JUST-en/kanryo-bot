@@ -5,6 +5,8 @@ const axios = require('axios');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+const zapierWebhookUrl = 'https://hooks.zapier.com/hooks/catch/23177519/uoitjli/';
+
 // Slackは application/x-www-form-urlencoded で送ってくる
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -19,14 +21,16 @@ app.post('/slack/actions', async (req, res) => {
 
       const token = process.env.SLACK_BOT_TOKEN;
 
-      // ▼ 文字列を分割して個別情報として使う
+      // ▼ 値を分割して各要素を取得
       const [genba, deadline, tantou] = action.value.split('|');
-      const notifyUser = '<@ULLR1PF7W>'; // メンションしたいユーザーID
+      const notifyUser = '<@ULLR1PF7W>';
+      const key = `genba_${genba}`;
+      const value = 'done';
 
       // ✅ ① スタンプを付ける
       await axios.post('https://slack.com/api/reactions.add', {
         channel: payload.channel.id,
-        name: 'white_check_mark', // ✅ のスタンプ
+        name: 'white_check_mark',
         timestamp: payload.message.ts
       }, {
         headers: {
@@ -35,7 +39,7 @@ app.post('/slack/actions', async (req, res) => {
         }
       });
 
-      // ✅ ② スレッドに返信を送る（詳細＋メンション付き＋Zapier用タグ付き）
+      // ✅ ② スレッド返信
       await axios.post('https://slack.com/api/chat.postMessage', {
         channel: payload.channel.id,
         thread_ts: payload.message.ts,
@@ -44,25 +48,26 @@ app.post('/slack/actions', async (req, res) => {
           `*現場名*: ${genba}\n` +
           `*〆切日*: ${deadline}\n` +
           `*担当者*: ${tantou}\n\n` +
-          `${notifyUser} さんにも通知しました。\n\n` +
-          `genba=${genba}|${deadline}|${tantou}` // ← Zapier用タグ行
+          `${notifyUser} さんにも通知しました。`
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
+
+      // ✅ ③ Zapierに送信（無料プラン対応）
+      await axios.post(zapierWebhookUrl, { key, value });
+      console.log(`📤 Zapierに送信: ${key} = ${value}`);
     }
 
-    res.status(200).send(); // Slackに「OK」返す（重要）
-
+    res.status(200).send();
   } catch (e) {
     console.error('❌ エラー:', e);
     res.status(500).send();
   }
 });
 
-// 動作確認用エンドポイント（オプション）
 app.get('/', (req, res) => {
   res.send('✅ サーバー稼働中');
 });
