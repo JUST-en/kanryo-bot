@@ -35,15 +35,17 @@ app.post('/slack/actions', async (req, res) => {
         }
       });
 
-      // ✅ ② スレッドに返信を送る（詳細＋メンション付き）
+      // ✅ ② スレッドに返信を送る（詳細＋メンション付き＋Zapier用タグ付き）
       await axios.post('https://slack.com/api/chat.postMessage', {
         channel: payload.channel.id,
         thread_ts: payload.message.ts,
-        text: `✅ 担当者が完了報告をしました！\n\n` +
-              `*現場名*: ${genba}\n` +
-              `*〆切日*: ${deadline}\n` +
-              `*担当者*: ${tantou}\n\n` +
-              `${notifyUser} さんにも通知しました。`
+        text:
+          `✅ 担当者が完了報告をしました！\n\n` +
+          `*現場名*: ${genba}\n` +
+          `*〆切日*: ${deadline}\n` +
+          `*担当者*: ${tantou}\n\n` +
+          `${notifyUser} さんにも通知しました。\n\n` +
+          `genba=${genba}|${deadline}|${tantou}` // ← Zapier用タグ行
       }, {
         headers: {
           Authorization: `Bearer ${token}`,
